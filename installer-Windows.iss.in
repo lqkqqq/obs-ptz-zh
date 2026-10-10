@@ -4,6 +4,11 @@
 #define MyAppPublisher "@PLUGIN_AUTHOR@"
 #define MyAppURL "https://obsproject.com/forum/resources/ptz-controls.1284/"
 
+; Inno Setup records the uninstall information of this product under this
+; registry key. It is used to detect (and remove) an already installed copy of
+; the plugin. Keep the GUID in sync with the AppId value in the [Setup] section.
+#define MyUninstallRegKey "Software\Microsoft\Windows\CurrentVersion\Uninstall\{91164700-22BC-4204-9F2D-AA8D6986A602}_is1"
+
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
@@ -21,26 +26,253 @@ OutputBaseFilename={#MyAppName}-{#MyAppVersion}-Windows-Installer
 Compression=lzma
 SolidCompression=yes
 DirExistsWarning=no
+; Keep the product removable. Setup cannot "modify" or "repair" an installation,
+; only (re)install it or uninstall it.
+Uninstallable=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[CustomMessages]
+english.MaintenanceCaption=Maintenance Options
+english.MaintenanceDescription=PTZ Controls %1 is already installed on this computer.
+english.MaintenanceSubCaption=Select what you want to do, then click Next.
+english.MaintenanceModeInstall=Install / upgrade to %1 (recommended)
+english.MaintenanceModeUninstall=Uninstall PTZ Controls
+english.UninstallCloseObs=Please close OBS Studio before continuing.%n%nThe plugin files cannot be removed while OBS Studio is running. Close OBS Studio if it is open, then click OK to continue.
+english.UninstallNothing=No installed copy of PTZ Controls was found, so there is nothing to uninstall.
+english.UninstallFailed=PTZ Controls could not be uninstalled.%n%nThe uninstaller returned code %1.
+english.UninstallDone=PTZ Controls has been uninstalled.%n%nNothing will be installed; Setup will now exit.
 
 [Files]
 Source: "..\release\Package\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\LICENSE"; Flags: dontcopy
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
+[UninstallDelete]
+; The plugin is installed into a directory of its own, so make sure nothing is
+; left behind when it is uninstalled.
+Type: filesandordirs; Name: "{app}"
+
 [Code]
+const
+  UninstallRegKey = '{#MyUninstallRegKey}';
+  ParamAbsent = '__absent__';
+
+var
+  PrevInstalled: Boolean;
+  PrevVersion: String;
+  PrevUninstallExe: String;
+  PrevInstallDir: String;
+
+  { Set when setup is started with /UNINSTALL: remove the plugin and install
+    nothing. The decision is normally taken on the maintenance page instead. }
+  ForceUninstall: Boolean;
+
+  LicensePage: TOutputMsgMemoWizardPage;
+  ModePage: TInputOptionWizardPage;
+  ModePageCreated: Boolean;
+
+{ --------------------------------------------------------------------------
+  A previously installed copy is located through the uninstall information
+  this installer itself writes. Both registry views and both machine-wide and
+  per-user installations are checked.
+  -------------------------------------------------------------------------- }
+function ReadPrevValue(const ValueName: String; var Value: String): Boolean;
+begin
+  Result := True;
+  if RegQueryStringValue(HKLM, UninstallRegKey, ValueName, Value) then Exit;
+  if RegQueryStringValue(HKLM64, UninstallRegKey, ValueName, Value) then Exit;
+  if RegQueryStringValue(HKCU, UninstallRegKey, ValueName, Value) then Exit;
+  if RegQueryStringValue(HKCU64, UninstallRegKey, ValueName, Value) then Exit;
+  Result := False;
+end;
+
+function StripQuotes(const S: String): String;
+begin
+  Result := S;
+  if (Length(Result) >= 2) and (Result[1] = '"') and
+     (Result[Length(Result)] = '"') then
+    Result := Copy(Result, 2, Length(Result) - 2);
+end;
+
+function StripTrailingBackslash(const S: String): String;
+begin
+  Result := S;
+  while (Length(Result) > 0) and (Result[Length(Result)] = '\') do
+    Result := Copy(Result, 1, Length(Result) - 1);
+end;
+
+{ The registry stores the uninstaller as a command line, usually quoted. }
+function UninstallerFromCommand(const Cmd: String): String;
+var
+  S: String;
+  P: Integer;
+begin
+  Result := '';
+  S := Trim(Cmd);
+  if S = '' then Exit;
+  if S[1] = '"' then begin
+    P := Pos('"', Copy(S, 2, Length(S) - 1));
+    if P > 0 then
+      Result := Copy(S, 2, P - 1)
+    else
+      Result := StripQuotes(S);
+  end else begin
+    P := Pos(' ', S);
+    if P > 0 then Result := Copy(S, 1, P - 1) else Result := S;
+  end;
+end;
+
+function FindPreviousInstall(): Boolean;
+var
+  Cmd: String;
+  Dir: String;
+begin
+  PrevUninstallExe := '';
+  PrevVersion := '';
+  PrevInstallDir := '';
+  Result := False;
+  if not ReadPrevValue('UninstallString', Cmd) then Exit;
+  if not ReadPrevValue('DisplayVersion', PrevVersion) then PrevVersion := '';
+  if PrevVersion = '' then PrevVersion := '?';
+  if ReadPrevValue('InstallLocation', Dir) then
+    PrevInstallDir := StripTrailingBackslash(Dir);
+  PrevUninstallExe := UninstallerFromCommand(Cmd);
+  Result := PrevUninstallExe <> '';
+end;
+
+{ The uninstaller deletes its own files asynchronously (it re-runs itself from
+  a temporary copy), so wait for the installation directory to disappear
+  before claiming success. Bounded, never blocks for long. }
+procedure WaitForPreviousRemoval();
+var
+  I: Integer;
+begin
+  if PrevInstallDir = '' then Exit;
+  I := 0;
+  while (I < 50) and DirExists(PrevInstallDir) do begin
+    Sleep(200);
+    I := I + 1;
+  end;
+  if DirExists(PrevInstallDir) then
+    Log('Note: ' + PrevInstallDir + ' still exists after waiting.')
+  else
+    Log('Previous installation directory removed: ' + PrevInstallDir);
+end;
+
+function RunPreviousUninstaller(var ExitCode: Integer): Boolean;
+begin
+  ExitCode := -1;
+  Result := False;
+  if PrevUninstallExe = '' then Exit;
+  if not FileExists(PrevUninstallExe) then begin
+    Log('Uninstaller not found: ' + PrevUninstallExe);
+    Exit;
+  end;
+  Log('Running previous uninstaller: ' + PrevUninstallExe);
+  Result := Exec(PrevUninstallExe, '/SILENT /SUPPRESSMSGBOXES /NORESTART', '',
+                 SW_SHOWNORMAL, ewWaitUntilTerminated, ExitCode);
+  if Result then begin
+    Log(Format('Previous uninstaller exit code: %d', [ExitCode]));
+    Result := (ExitCode = 0);
+  end;
+  if Result then WaitForPreviousRemoval();
+end;
+
+{ Unattended removal: setup.exe /UNINSTALL (also accepts /UNINSTALL=1). }
+function UninstallRequested(): Boolean;
+begin
+  Result := ExpandConstant('{param:UNINSTALL|' + ParamAbsent + '}') <> ParamAbsent;
+end;
+
+{ 0 = install/upgrade, 1 = uninstall only. }
+function SelectedMode(): Integer;
+begin
+  if ForceUninstall then
+    Result := 1
+  else if ModePageCreated then
+    Result := ModePage.SelectedValueIndex
+  else
+    Result := 0;
+end;
+
+function InitializeSetup(): Boolean;
+begin
+  PrevInstalled := FindPreviousInstall();
+  ForceUninstall := UninstallRequested();
+  Result := True;
+end;
+
 procedure InitializeWizard();
 var
   GPLText: AnsiString;
-  Page: TOutputMsgMemoWizardPage;
+  AfterID: Integer;
+  VerLabel: String;
 begin
+  AfterID := wpWelcome;
+
+  { Offer the maintenance choice only when there is something to maintain and
+    the user did not already ask for a plain uninstall on the command line. }
+  if PrevInstalled and (not ForceUninstall) then begin
+    { Note: no line inside [Code] may start with '[' - Setup would mistake it
+      for the start of a new section. }
+    VerLabel := 'v' + PrevVersion;
+    ModePage := CreateInputOptionPage(AfterID,
+      ExpandConstant('{cm:MaintenanceCaption}'),
+      FmtMessage(ExpandConstant('{cm:MaintenanceDescription}'), [VerLabel]),
+      ExpandConstant('{cm:MaintenanceSubCaption}'),
+      True, False);
+    ModePage.Add(FmtMessage(ExpandConstant('{cm:MaintenanceModeInstall}'), [VerLabel]));
+    ModePage.Add(ExpandConstant('{cm:MaintenanceModeUninstall}'));
+    ModePage.SelectedValueIndex := 0;
+    ModePageCreated := True;
+    AfterID := ModePage.ID;
+  end;
+
   ExtractTemporaryFile('LICENSE');
   LoadStringFromFile(ExpandConstant('{tmp}\LICENSE'), GPLText);
-  Page := CreateOutputMsgMemoPage(wpWelcome,
+  LicensePage := CreateOutputMsgMemoPage(AfterID,
     'License Information', 'Please review the license terms before installing {#MyAppFullName}',
     'Press Page Down to see the rest of the agreement. Once you are aware of your rights, click Next to continue.',
     String(GPLText)
   );
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := False;
+  { Uninstall only: skip every page that belongs to the installation flow. }
+  if SelectedMode() = 1 then
+    Result := (PageID = LicensePage.ID) or (PageID = wpSelectDir) or (PageID = wpReady);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ExitCode: Integer;
+  Msg: String;
+begin
+  if CurStep <> ssInstall then Exit;
+  if SelectedMode() <> 1 then Exit;
+
+  if not PrevInstalled then begin
+    if not WizardSilent then
+      MsgBox(ExpandConstant('{cm:UninstallNothing}'), mbInformation, MB_OK);
+    Abort;
+  end;
+
+  if not WizardSilent then
+    MsgBox(ExpandConstant('{cm:UninstallCloseObs}'), mbInformation, MB_OK);
+
+  if not RunPreviousUninstaller(ExitCode) then begin
+    Msg := ExpandConstant('{cm:UninstallFailed}');
+    MsgBox(FmtMessage(Msg, [IntToStr(ExitCode)]), mbError, MB_OK);
+    Abort;
+  end;
+
+  { Abort is honoured in CurStepChanged(ssInstall) and terminates Setup before
+    anything is copied, so the plugin is removed and nothing is installed. }
+  if not WizardSilent then
+    MsgBox(ExpandConstant('{cm:UninstallDone}'), mbInformation, MB_OK);
+  Abort;
 end;

@@ -46,12 +46,14 @@
 | `src/ptz-controls.cpp` | 摇杆轴映射的 9 个选项名改用命名空间 key（原先这 8 个选项**没有语言包条目**，中文界面下会显示英文） |
 | `src/ptz-controls.ui` | 面板右键菜单的 6 个菜单项文本改用语言包 key（原先硬编码英文：属性 / 添加 / 移除 / 上移 / 下移 / 重命名） |
 | `src/ptz.c` | 插件模块名与描述改用命名空间 key，可在 OBS 插件列表中显示中文 |
+| `installer-Windows.iss.in` | Windows 安装器**新增卸载能力**：检测到已装版本时进入维护页，可选「安装 / 升级」或「卸载 PTZ Controls」；另支持 `setup.exe /UNINSTALL` 一条命令静默卸载 |
 | `README.md` | 项目介绍中文化（英文原版保留为 `README.en.md`） |
 
 ### 已知限制
 
 - **Windows 安装程序界面仍为英文**：安装器用的是 Inno Setup 自带的英文语言文件（`compiler:Default.isl`），
-  而官方编译环境里没有简体中文 `.isl`，强行加入会让打包失败。安装过程只有两三步，不影响使用。
+  而官方编译环境里没有简体中文 `.isl`，强行加入会让打包失败。新增的维护页与卸载提示同样走英文语言包。
+  安装 / 卸载过程只有两三步，不影响使用。
 - 除简体中文外，其余 29 种语言**未做改动**；若某个新词条没有对应语言的译文，OBS 会自动回退显示英文。
 - 本分支不参与上游的 Crowdin 翻译流程。若日后启用仓库内的 `.github/workflows/crowdin.yml`，
   该工作流会以 PR 形式拉取上游译文，可能覆盖这里的汉化内容——纯汉化用途建议保持该工作流关闭。
@@ -84,6 +86,37 @@ macOS（Universal）与 Ubuntu Linux 26.04（x86_64、aarch64）的二进制包�
 如果你的平台或发行版不在上述范围内，需要参考下文「从源码构建」。
 
 [OBS PTZ Releases](https://github.com/glikely/obs-ptz/releases)
+
+## 卸载
+
+上游安装器只能安装 / 覆盖，要删插件得去系统的「应用和功能」里翻。本分支给 Windows 安装器
+补上了卸载能力，两种方式都能用：
+
+**方式一：从安装程序卸载（需要人操作）**
+
+直接运行 `PTZControls-<版本>-windows-x64.exe`。安装器检测到本机已装过本插件时，
+不会直接开始安装，而是先显示一个维护页：
+
+- `Install / upgrade to <版本>` —— 安装或升级（默认选项）
+- `Uninstall PTZ Controls` —— 卸载已装的插件
+
+选中卸载并继续，安装器会调用已安装版本的卸载程序把插件移除，然后自动退出。
+**卸载前请先关闭 OBS Studio**，否则正在占用的 DLL 可能删不掉。
+
+**方式二：命令行静默卸载（脚本 / 批处理用）**
+
+```bat
+PTZControls-0.20.0-windows-x64.exe /UNINSTALL
+```
+
+配合 `/VERYSILENT /NORESTART` 可做到完全无窗口：
+
+```bat
+PTZControls-0.20.0-windows-x64.exe /UNINSTALL /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+```
+
+若本机根本没装过该插件，`/UNINSTALL` 不会报错，只是提示「没有检测到已安装的 PTZ Controls」后退出。
+想确认卸载结果，可以看 `C:\ProgramData\obs-studio\plugins\obs-ptz\` 是否已被删除。
 
 ## 配置
 
