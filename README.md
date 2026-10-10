@@ -1,7 +1,7 @@
 # OBS Studio 云台摄像机控制插件（PTZ Controls）· 简体中文版
 
-[![Push](https://github.com/glikely/obs-ptz/actions/workflows/push.yaml/badge.svg)](https://github.com/glikely/obs-ptz/actions/workflows/push.yaml)
-[![Crowdin](https://badges.crowdin.net/obs-ptz/localized.svg)](https://crowdin.com/project/obs-ptz)
+[![语言](https://img.shields.io/badge/lang-zh--CN-blue.svg)](#汉化说明)
+[![上游](https://img.shields.io/badge/upstream-glikely%2Fobs--ptz-lightgrey.svg)](https://github.com/glikely/obs-ptz)
 
 > 本仓库（`obs-ptz-zh`）是 [glikely/obs-ptz](https://github.com/glikely/obs-ptz) 的**简体中文汉化分支**。
 > 插件本身是成熟的上游项目，本分支只做中文化、不动功能逻辑，方便中文用户直接上手。
@@ -49,6 +49,10 @@
 | `installer-Windows.iss.in` | Windows 安装器**新增卸载能力**：检测到已装版本时进入维护页，可选「安装 / 升级」或「卸载 PTZ Controls」；另支持 `setup.exe /UNINSTALL` 一条命令静默卸载 |
 | `README.md` | 项目介绍中文化（英文原版保留为 `README.en.md`） |
 
+> **实机验证**：以上改动已在 **OBS Studio 32.2.2（Windows x64）** 上用真实编译产物跑通 ——
+> 插件正常加载，并在「停靠窗口」菜单中显示为中文 **`PTZ 控制`**；
+> Windows 安装器的维护页（安装 / 卸载二选一）与 `/UNINSTALL` 静默卸载均已实测可用。
+
 ### 已知限制
 
 - **Windows 安装程序界面仍为英文**：安装器用的是 Inno Setup 自带的英文语言文件（`compiler:Default.isl`），
@@ -76,16 +80,19 @@ git merge upstream/main        # 上游若改动了语言包 key，按提示重�
 
 ## 安装
 
-到上游的 Releases 页面下载对应平台的安装包。官方目前提供 Windows（x64、arm64）、
-macOS（Universal）与 Ubuntu Linux 26.04（x86_64、aarch64）的二进制包。
-下载后直接安装即可。插件需要 **OBS Studio 31 或更高版本**。
+**Windows 用户**：建议使用本分支构建的安装包 —— **简体中文界面与新增的卸载功能只存在于本分支**，
+上游官方安装包不含这两项（其语言包中的 `zh-CN.ini` 是空文件）。
+
+**其它平台**：可到上游 Releases 下载官方包（目前提供 Windows x64 / arm64、macOS Universal、
+Ubuntu Linux 26.04 x86_64 / aarch64）。插件需要 **OBS Studio 31 或更高版本**。
 
 > Ubuntu 24.04 自带的 `obs-studio` 软件包是 30 版，版本过低；请改从 obsproject PPA 安装
 > OBS Studio（该 PPA 只提供 x86_64 构建）。
 
-如果你的平台或发行版不在上述范围内，需要参考下文「从源码构建」。
+如果你的平台不在上述范围内，或想要本分支的汉化 + 卸载功能，请参考下文「从源码构建」。
 
-[OBS PTZ Releases](https://github.com/glikely/obs-ptz/releases)
+- [本仓库 Releases](https://github.com/lqkqqq/obs-ptz-zh/releases)（简体中文 + 卸载功能）
+- [上游 Releases](https://github.com/glikely/obs-ptz/releases)（官方原版）
 
 ## 卸载
 
@@ -241,11 +248,11 @@ PS > .github/scripts/Build-Windows.ps1
 
 # 参与贡献
 
-欢迎贡献！你可以通过 GitHub Pull Request 提交改动，详见项目的 Pull Request 页面。
-https://github.com/glikely/obs-ptz/pulls
-
-我们也需要把插件翻译成更多语言，欢迎到 Crowdin 项目页参与：
-[PTZ Controls on Crowdin](https://crowdin.com/project/obs-ptz)
+- **功能改进 / Bug 修复**：请提到上游 [glikely/obs-ptz](https://github.com/glikely/obs-ptz)，让所有用户受益。
+- **简体中文的用词、错译、漏译**：请提到本仓库的
+  [Issues](https://github.com/lqkqqq/obs-ptz-zh/issues)，或直接发 Pull Request。
+- **其它语言的翻译**：欢迎到上游的 Crowdin 项目页参与
+  [PTZ Controls on Crowdin](https://crowdin.com/project/obs-ptz)。
 
 更多细节见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
