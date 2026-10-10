@@ -101,7 +101,7 @@ Ubuntu Linux 26.04 x86_64 / aarch64）。插件需要 **OBS Studio 31 或更高�
 
 **方式一：从安装程序卸载（需要人操作）**
 
-直接运行 `PTZControls-<版本>-windows-x64.exe`。安装器检测到本机已装过本插件时，
+直接运行 `obs-ptz-<版本>-windows-x64-Installer.exe`。安装器检测到本机已装过本插件时，
 不会直接开始安装，而是先显示一个维护页：
 
 - `Install / upgrade to <版本>` —— 安装或升级（默认选项）
@@ -113,13 +113,13 @@ Ubuntu Linux 26.04 x86_64 / aarch64）。插件需要 **OBS Studio 31 或更高�
 **方式二：命令行静默卸载（脚本 / 批处理用）**
 
 ```bat
-PTZControls-0.20.0-windows-x64.exe /UNINSTALL
+obs-ptz-0.20.0-pre2-windows-x64-Installer.exe /UNINSTALL
 ```
 
 配合 `/VERYSILENT /NORESTART` 可做到完全无窗口：
 
 ```bat
-PTZControls-0.20.0-windows-x64.exe /UNINSTALL /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+obs-ptz-0.20.0-pre2-windows-x64-Installer.exe /UNINSTALL /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 ```
 
 若本机根本没装过该插件，`/UNINSTALL` 不会报错，只是提示「没有检测到已安装的 PTZ Controls」后退出。
