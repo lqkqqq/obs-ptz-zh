@@ -57,7 +57,6 @@ Type: filesandordirs; Name: "{app}"
 [Code]
 const
   UninstallRegKey = '{#MyUninstallRegKey}';
-  ParamAbsent = '__absent__';
 
 var
   PrevInstalled: Boolean;
@@ -180,10 +179,37 @@ begin
   if Result then WaitForPreviousRemoval();
 end;
 
-{ Unattended removal: setup.exe /UNINSTALL (also accepts /UNINSTALL=1). }
+{ Unattended removal: setup.exe /UNINSTALL (also accepts /UNINSTALL=1).
+
+  NOTE: this has to scan ParamStr(). The param:UNINSTALL constant cannot be
+  used for it: Inno Setup 6.7 substitutes the supplied default value when a
+  parameter is present but has no value, so that constant returns the default
+  for both "not given" and "given without a value" - it can never tell a bare
+  "/UNINSTALL" apart from an absent parameter. Verified with a probe build:
+  ParamStr() sees "/UNINSTALL" while the constant returns its default.
+
+  (Careful: no braces inside this comment - a nested closing brace would end
+  the comment early and turn the rest of the text into code.) }
 function UninstallRequested(): Boolean;
+var
+  I: Integer;
+  S: String;
 begin
-  Result := ExpandConstant('{param:UNINSTALL|' + ParamAbsent + '}') <> ParamAbsent;
+  Result := False;
+  for I := 1 to ParamCount do begin
+    S := Uppercase(Trim(ParamStr(I)));
+    if (S = '/UNINSTALL') or (S = '-UNINSTALL') or
+       (S = '/UNINSTALL=1') or (S = '-UNINSTALL=1') or
+       (S = '/UNINSTALL=YES') or (S = '/UNINSTALL=TRUE') then begin
+      Result := True;
+      Exit;
+    end;
+    if (S = '/UNINSTALL=0') or (S = '/UNINSTALL=NO') or
+       (S = '/UNINSTALL=FALSE') then begin
+      Result := False;
+      Exit;
+    end;
+  end;
 end;
 
 { 0 = install/upgrade, 1 = uninstall only. }
