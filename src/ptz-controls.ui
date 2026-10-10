@@ -161,7 +161,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Properties</string>
+    <string>PTZ.Action.Properties</string>
    </property>
    <property name="toolTip">
     <string>PTZ.Action.Properties.Tooltip</string>
@@ -172,7 +172,7 @@
   </action>
   <action name="actionPresetAdd">
    <property name="text">
-    <string>Add</string>
+    <string>PTZ.Action.Preset.Add</string>
    </property>
    <property name="toolTip">
     <string>PTZ.Action.Preset.Add.Tooltip</string>
@@ -183,7 +183,7 @@
   </action>
   <action name="actionPresetRemove">
    <property name="text">
-    <string>Remove</string>
+    <string>PTZ.Action.Preset.Remove</string>
    </property>
    <property name="toolTip">
     <string>PTZ.Action.Preset.Remove.Tooltip</string>
@@ -194,7 +194,7 @@
   </action>
   <action name="actionPresetMoveUp">
    <property name="text">
-    <string>MoveUp</string>
+    <string>PTZ.Action.Preset.MoveUp</string>
    </property>
    <property name="toolTip">
     <string>PTZ.Action.Preset.MoveUp.Tooltip</string>
@@ -205,7 +205,7 @@
   </action>
   <action name="actionPresetMoveDown">
    <property name="text">
-    <string>MoveDown</string>
+    <string>PTZ.Action.Preset.MoveDown</string>
    </property>
    <property name="toolTip">
     <string>PTZ.Action.Preset.MoveDown.Tooltip</string>
@@ -216,7 +216,7 @@
   </action>
   <action name="actionPresetRename">
    <property name="text">
-    <string>Rename</string>
+    <string>PTZ.Action.Preset.Rename</string>
    </property>
    <property name="toolTip">
     <string>PTZ.Action.Preset.Rename.Tooltip</string>

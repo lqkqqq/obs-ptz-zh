@@ -40,15 +40,17 @@
 #include "settings.hpp"
 #include "ptz.h"
 
-const char *ptz_joy_action_axis_names[PTZ_JOY_ACTION_LAST_VALUE] = {"None",
-								    "Pan",
-								    "Pan (Inverted)",
-								    "Tilt",
-								    "Tilt (Inverted)",
-								    "Zoom",
-								    "Zoom (Inverted)",
-								    "Focus",
-								    "Focus (Inverted)"};
+const char *ptz_joy_action_axis_names[PTZ_JOY_ACTION_LAST_VALUE] = {
+	"PTZ.Joystick.Axis.None",
+	"PTZ.Joystick.Axis.Pan",
+	"PTZ.Joystick.Axis.PanInverted",
+	"PTZ.Joystick.Axis.Tilt",
+	"PTZ.Joystick.Axis.TiltInverted",
+	"PTZ.Joystick.Axis.Zoom",
+	"PTZ.Joystick.Axis.ZoomInverted",
+	"PTZ.Joystick.Axis.Focus",
+	"PTZ.Joystick.Axis.FocusInverted",
+};
 
 void ptz_load_controls(void)
 {
