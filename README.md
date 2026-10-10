@@ -92,6 +92,7 @@ Ubuntu Linux 26.04 x86_64 / aarch64）。插件需要 **OBS Studio 31 或更高�
 如果你的平台不在上述范围内，或想要本分支的汉化 + 卸载功能，请参考下文「从源码构建」。
 
 - [本仓库 Releases](https://github.com/lqkqqq/obs-ptz-zh/releases)（简体中文 + 卸载功能）
+  - 最新 Windows 安装包直链：[`obs-ptz-0.20.0-pre2-windows-x64-Installer.exe`](https://github.com/lqkqqq/obs-ptz-zh/releases/download/v0.20.0-pre2-zh/obs-ptz-0.20.0-pre2-windows-x64-Installer.exe)（7.05 MB）
 - [上游 Releases](https://github.com/glikely/obs-ptz/releases)（官方原版）
 
 ## 卸载
